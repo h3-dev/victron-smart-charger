@@ -26,11 +26,13 @@ def main():
 
 def main_loop():
     import time as sys_time
+
     while True:
         print("🔄 Starte neuen Durchlauf...")
         main()  # deine Hauptlogik
         print("🕒 Warte 5 Minuten bis zum nächsten Abruf...\n")
         sys_time.sleep(300)  # 5 Minuten warten (300 Sekunden)
+
 
 if __name__ == "__main__":
     main_loop()

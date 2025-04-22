@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta, time as dtime
+from datetime import datetime, time as dtime
 
 from config import (  # Importiere zentrale Konfiguration
     VRM_API_TOKEN,
@@ -11,6 +11,7 @@ from utils import (  # Importiere zentrale Konfiguration
     get_unix_timestamp,
     now,
 )
+
 
 def get_forecast():
     """Holt die PV-Ertragsprognose für den aktuellen Tag."""
@@ -31,7 +32,7 @@ def get_forecast():
 
     headers = {
         "content-type": "application/json",
-        "x-authorization": f"Token {VRM_API_TOKEN}"
+        "x-authorization": f"Token {VRM_API_TOKEN}",
     }
 
     response = requests.get(url, headers=headers)
@@ -41,7 +42,7 @@ def get_forecast():
 
     try:
         data = response.json()
-        forecast_data = data['records']['solar_yield_forecast']
+        forecast_data = data["records"]["solar_yield_forecast"]
 
         valid_forecast_full = []
         valid_forecast_future = []
