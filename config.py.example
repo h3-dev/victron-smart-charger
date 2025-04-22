@@ -1,0 +1,29 @@
+VRM_API_TOKEN = ''
+VRM_INSTALLATION_ID = ''
+
+# ==== Battery ====
+battery_capacity_kwh = 16
+battery_voltage = 52
+battery_charging_efficiency = 0.95
+battery_min_charge_current = 5
+battery_fallback_charge_current = 80
+battery_max_charge_current = 80
+battery_target_soc = 95
+battery_soc_override = 50
+
+# ==== Forecast / Control ====
+forecast_start_offset_hours = 0
+forecast_end_offset_hours = 0
+household_baseline_watt = 400
+
+# ==== Debug / Test ====
+output_forecast = False
+test_mode_on = True
+
+from datetime import datetime
+now_override = datetime(2025, 4, 22, 8, 1, 0)
+
+# Timecontrol
+import os, time
+os.environ['TZ'] = 'Europe/Berlin'
+time.tzset()
