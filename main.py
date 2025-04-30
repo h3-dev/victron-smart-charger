@@ -18,21 +18,9 @@ def main():
         # Ladeplan-Abgleich
         charging_current_now = charging_plan.get(now_hour, 0)
         set_max_charge_current(charging_current_now)
-
-        print("Charging current for now_hour:", charging_current_now, "at", now_hour)
     else:
         print("❌ No valid forecast available.")
 
 
-def main_loop():
-    import time as sys_time
-
-    while True:
-        print("🔄 Starte neuen Durchlauf...")
-        main()  # deine Hauptlogik
-        print("🕒 Warte 5 Minuten bis zum nächsten Abruf...\n")
-        sys_time.sleep(300)  # 5 Minuten warten (300 Sekunden)
-
-
 if __name__ == "__main__":
-    main_loop()
+    main()

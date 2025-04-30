@@ -22,14 +22,15 @@ def set_max_charge_current(current_a: int):
             # Wert setzen
             set_value(dbus.Int32(current_a))
 
-            print(f"✅ MaxChargeCurrent gesetzt auf {current_a} A")
+            print(f"✅ DVCC MaxChargeCurrent set to {current_a}A")
             return True
 
         except Exception as e:
-            print(f"❌ Fehler beim Setzen des MaxChargeCurrent: {e}")
+            print(f"❌ Error setting DVCC MaxChargeCurrent: {e}")
             return False
     else:
-        print(f"✅ MaxChargeCurrent gesetzt auf {current_a} A")
+        print(f"✅ DVCC MaxChargeCurrent set to {current_a}A")
+        print("[TESTMODE]")
         return True
 
 

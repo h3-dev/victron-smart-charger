@@ -75,5 +75,5 @@ def calculate_hourly_charging_plan(valid_forecast_future):
         )
 
     print("╚════════════════════╩════════════════╩══════════════╝\n")
-    print("Current SOC:", get_battery_soc(), "%")
+    print("🔋 Current SOC:", get_battery_soc(),"%")
     return charging_plan
