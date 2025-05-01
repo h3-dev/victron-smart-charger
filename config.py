@@ -35,6 +35,7 @@ VRM_API_TOKEN: str = os.getenv("VRM_API_TOKEN", "")
 VRM_INSTALLATION_ID: str = os.getenv("VRM_INSTALLATION_ID", "")
 VENUS_HOST: str = os.getenv("VENUS_HOST", "")
 VENUS_DEVICE_ID: str = os.getenv("VENUS_DEVICE_ID", "")
+APP_REFRESH_INTERVAL_SEC: int = int(os.getenv("APP_REFRESH_INTERVAL", 900))
 
 # ------------------------------------------------------------------
 # 3)  Battery parameters
@@ -45,12 +46,8 @@ BATTERY_VOLTAGE: int = int(os.getenv("BATTERY_VOLTAGE", 52))
 BATTERY_CHARGING_EFFICIENCY: float = float(
     os.getenv("BATTERY_CHARGING_EFFICIENCY", 0.90)
 )
-BATTERY_MIN_CHARGE_CURRENT: int = int(
-    os.getenv("BATTERY_MIN_CHARGE_CURRENT", 1)
-)
-BATTERY_MAX_CHARGE_CURRENT: int = int(
-    os.getenv("BATTERY_MAX_CHARGE_CURRENT", 80)
-)
+BATTERY_MIN_CHARGE_CURRENT: int = int(os.getenv("BATTERY_MIN_CHARGE_CURRENT", 1))
+BATTERY_MAX_CHARGE_CURRENT: int = int(os.getenv("BATTERY_MAX_CHARGE_CURRENT", 80))
 BATTERY_FALLBACK_CHARGE_CURRENT: int = int(
     os.getenv("BATTERY_FALLBACK_CHARGE_CURRENT", 80)
 )
