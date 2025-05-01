@@ -35,7 +35,7 @@ VRM_API_TOKEN: str = os.getenv("VRM_API_TOKEN", "")
 VRM_INSTALLATION_ID: str = os.getenv("VRM_INSTALLATION_ID", "")
 VENUS_HOST: str = os.getenv("VENUS_HOST", "")
 VENUS_DEVICE_ID: str = os.getenv("VENUS_DEVICE_ID", "")
-APP_REFRESH_INTERVAL_SEC: int = int(os.getenv("APP_REFRESH_INTERVAL", 900))
+APP_REFRESH_INTERVAL_SEC: int = int(os.getenv("APP_REFRESH_INTERVAL_SEC", 900))
 
 # ------------------------------------------------------------------
 # 3)  Battery parameters
