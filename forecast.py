@@ -1,46 +1,45 @@
 import requests
 from datetime import datetime, time as dtime
 import config
-
-from utils import (  # Importiere zentrale Konfiguration
+from utils import (
     get_unix_timestamp,
     now,
 )
 
 
 def get_forecast():
-    """Holt die PV-Ertragsprognose für den aktuellen Tag – aus der VRM API oder per Override."""
+    """Return today’s PV yield forecast – either from VRM API or from override data."""
 
     current_time = now()
     now_hour = current_time.replace(minute=0, second=0, microsecond=0)
 
-    # =========================
-    # 🧪 Test-Modus: Forecast-Override verwenden
-    # =========================
-    if config.test_mode_on and config.forecast_override_data:
-        print("⚠️ Verwende Forecast-Override aus config.py")
+    # ==========================================================
+    # 🧪 Test mode: use forecast override from .env / config.py
+    # ==========================================================
+    if config.TEST_MODE_ON and config.FORECAST_OVERRIDE_DATA:
+        print("⚠️  Using forecast override from config.py")
         valid_forecast_full = []
         valid_forecast_future = []
         total_forecast = 0
 
-        for time_str, yield_wh in config.forecast_override_data:
+        for time_str, yield_wh in config.FORECAST_OVERRIDE_DATA:
             ts = datetime.strptime(time_str, "%Y-%m-%d %H:%M")
             valid_forecast_full.append((ts, yield_wh))
             total_forecast += yield_wh
             if ts >= now_hour:
                 valid_forecast_future.append((ts, yield_wh))
 
-        if config.output_forecast:
-            print("🔆 (Test) PV-Vorhersage (Wh):")
+        if config.OUTPUT_FORECAST:
+            print("🔆 (Test) PV forecast (Wh):")
             for ts, val in valid_forecast_future:
                 print(f"{ts.strftime('%Y-%m-%d %H:%M')}: {val:.0f} Wh")
             print(f"\n📊 (Test) Total solar yield: {total_forecast / 1000:.2f} kWh")
 
         return valid_forecast_full, valid_forecast_future
 
-    # =========================
-    # 🌤 Live-Modus: Prognose von der VRM API holen
-    # =========================
+    # ==========================================================
+    # 🌤 Live mode: fetch forecast from VRM API
+    # ==========================================================
     start_date = datetime.combine(current_time.date(), dtime.min)
     end_date = datetime.combine(current_time.date(), dtime.max)
     start_ts = get_unix_timestamp(start_date)
@@ -59,7 +58,7 @@ def get_forecast():
 
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        print("❌ Fehler beim Abrufen der Daten:", response.status_code, response.text)
+        print("❌ Error fetching data:", response.status_code, response.text)
         return None, None
 
     try:
@@ -80,17 +79,17 @@ def get_forecast():
                 if timestamp >= now_hour:
                     valid_forecast_future.append((timestamp, yield_wh))
 
-        if config.output_forecast:
-            print("🔆 PV-Vorhersage (kommende Stunden mit positiver Prognose, Wh):")
+        if config.OUTPUT_FORECAST:
+            print("🔆 PV forecast (upcoming hours, Wh):")
             for timestamp, yield_wh in valid_forecast_future:
                 print(f"{timestamp.strftime('%Y-%m-%d %H:%M')}: {yield_wh:.0f} Wh")
             print(f"\n📊 Total solar daily yield: {total_forecast / 1000:.2f} kWh")
 
         if not valid_forecast_full:
-            print("❌ Keine gültigen Prognosen für den heutigen Tag.")
+            print("❌ No valid forecasts for today.")
 
         return valid_forecast_full, valid_forecast_future
 
     except Exception as e:
-        print("❌ Fehler beim Verarbeiten der Antwort:", e)
+        print("❌ Error processing API response:", e)
         return None, None

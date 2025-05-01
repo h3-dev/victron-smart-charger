@@ -1,92 +1,120 @@
-import math
-
 import config
-
 from victron_mqtt import get_battery_soc
-
-# from victron_interface import get_battery_soc
+from math import floor
 
 
 def calculate_hourly_charging_plan(valid_forecast_future):
+    """Return an hourly charging plan (integer amps, max deviation < 1 A·V)."""
 
-    battery_soc_current = get_battery_soc()
+    batt_soc_now = get_battery_soc()
 
     if not valid_forecast_future:
-        print("❌ Keine gültige Prognose für Ladeplan.")
+        print("❌ No valid forecast available.")
         return {}
 
-    # Ladebedarf in kWh berechnen
-    energy_needed_kwh = (
-        config.battery_capacity_kwh
-        * (config.battery_target_soc - battery_soc_current)
-        / 100
+    # -------------------------------------------------------------
+    # 1. Required DC energy (Wh) to reach target SOC
+    # -------------------------------------------------------------
+    need_kwh = (
+        config.BATTERY_CAPACITY_KWH * (config.BATTERY_TARGET_SOC - batt_soc_now) / 100
     )
-    if energy_needed_kwh <= 0:
-        print("🔋 Akku ist bereits ausreichend geladen.")
+    if need_kwh <= 0:
+        print("🔋 Battery already sufficiently charged.")
         return {}
 
-    energy_needed_wh = energy_needed_kwh * 1000
+    need_wh_dc = need_kwh * 1000 / config.BATTERY_CHARGING_EFFICIENCY
+    V = config.BATTERY_VOLTAGE
 
-    # Summe der gewichteten Prognose (mit exponentieller Gewichtung)
-    weighted_forecasts = [
-        (ts, max(yield_wh - config.household_baseline_watt, 0))
-        for ts, yield_wh in valid_forecast_future
+    # -------------------------------------------------------------
+    # 2. Net forecast (PV minus baseline consumption)
+    # -------------------------------------------------------------
+    net = [
+        (ts, max(y - config.HOUSEHOLD_BASELINE_WATT, 0))
+        for ts, y in valid_forecast_future
     ]
-    weighted_values = [
-        (ts, val**config.charging_weight_exponent)
-        for ts, val in weighted_forecasts
-        if val > 0
-    ]
-    total_weight = sum(val for _, val in weighted_values)
-
-    if total_weight == 0:
-        print("❌ Keine nutzbaren PV-Erträge prognostiziert (nach Baseline).")
+    total_net_wh = sum(w for _, w in net)
+    if total_net_wh == 0:
+        print("❌ No usable PV generation forecast.")
         return {}
 
-    charging_plan = {}
-    soc_projection = []
-    soc = battery_soc_current
+    # -------------------------------------------------------------
+    # 3. Raw currents, floor, fractional parts
+    # -------------------------------------------------------------
+    rows = []
+    for ts, wh in net:
+        share = wh / total_net_wh
+        energy_h = need_wh_dc * share  # Wh for this hour
+        raw_a = energy_h / V  # A before rounding
 
-    print("\n📅 Ladeplan:")
-    print("╔════════════════════╦════════════════╦══════════════╗")
-    print("║ Uhrzeit            ║ Ladestrom [A]  ║ SoC [%]      ║")
-    print("╠════════════════════╬════════════════╬══════════════╣")
+        # Apply min/max limits
+        if raw_a > 0:
+            raw_a = max(raw_a, config.BATTERY_MIN_CHARGE_CURRENT)
+        raw_a = min(raw_a, config.BATTERY_MAX_CHARGE_CURRENT)
 
-    for (ts, forecast_wh), (_, weighted_val) in zip(
-        weighted_forecasts, weighted_values
-    ):
-        share = weighted_val / total_weight
-        energy_to_charge_wh = energy_needed_wh * share
-        charging_current_a_raw = energy_to_charge_wh / config.battery_voltage
-        charging_current_a = math.ceil(charging_current_a_raw)
-
-        if soc >= config.battery_target_soc:
-            charging_current_a = 0
-        elif forecast_wh == 0:
-            charging_current_a = config.battery_fallback_charge_current
-
-        # Mindest- und Maximalwerte durchsetzen
-        if charging_current_a > 0:
-            charging_current_a = max(
-                charging_current_a, config.battery_min_charge_current
-            )
-        charging_current_a = min(charging_current_a, config.battery_max_charge_current)
-
-        rounded_timestamp = ts.replace(minute=0, second=0, microsecond=0)
-        charging_plan[rounded_timestamp] = charging_current_a
-
-        if soc < 100 and charging_current_a > 0:
-            energy_added_kwh = (
-                charging_current_a * config.battery_voltage / 1000
-            ) * config.battery_charging_efficiency
-            soc += (energy_added_kwh / config.battery_capacity_kwh) * 100
-            soc = min(soc, 100.0)
-
-        soc_projection.append((rounded_timestamp, soc))
-        print(
-            f"║ {rounded_timestamp.strftime('%Y-%m-%d %H:%M')}   ║    {charging_current_a:6.2f} A    ║   {soc:6.1f} %   ║"
+        floor_a = int(floor(raw_a))
+        fraction = raw_a - floor_a
+        rows.append(
+            {
+                "ts": ts.replace(minute=0, second=0, microsecond=0),
+                "floor": floor_a,
+                "frac": fraction,
+            }
         )
 
-    print("╚════════════════════╩════════════════╩══════════════╝\n")
-    print("🔋 Current SOC:", get_battery_soc(), "%")
+    # -------------------------------------------------------------
+    # 4. Energy balance after flooring
+    # -------------------------------------------------------------
+    supplied_wh = sum(r["floor"] * V for r in rows)
+    delta_wh = need_wh_dc - supplied_wh  # positive → missing, negative → surplus
+
+    # -------------------------------------------------------------
+    # 5. Largest-remainder adjustment (+1 A or –1 A steps)
+    # -------------------------------------------------------------
+    if abs(delta_wh) >= V:  # at least 1 A deviation
+        rows_sorted = sorted(rows, key=lambda r: r["frac"], reverse=(delta_wh > 0))
+
+        step = V if delta_wh > 0 else -V
+        idx = 0
+        while abs(delta_wh) >= V and idx < len(rows_sorted):
+            r = rows_sorted[idx]
+            within_limits = (
+                delta_wh > 0 and r["floor"] < config.BATTERY_MAX_CHARGE_CURRENT
+            ) or (delta_wh < 0 and r["floor"] > config.BATTERY_MIN_CHARGE_CURRENT)
+            if within_limits and r["floor"] > 0:
+                r["floor"] += 1 if delta_wh > 0 else -1
+                delta_wh -= step
+            idx += 1
+
+    # -------------------------------------------------------------
+    # 6. Assemble result & SOC projection
+    # -------------------------------------------------------------
+    rows.sort(key=lambda r: r["ts"])  # chronological order
+    charging_plan = {}
+    soc = batt_soc_now
+
+    print("\n📅 Charging plan:")
+    print("╔════════════════════╦════════════════╦══════════════╗")
+    print("║ Timestamp          ║ Current [A]    ║ SOC [%]      ║")
+    print("╠════════════════════╬════════════════╬══════════════╣")
+
+    for r in rows:
+        A = r["floor"]
+        charging_plan[r["ts"]] = A
+
+        if A > 0 and soc < 100:
+            added_kwh = (A * V / 1000) * config.BATTERY_CHARGING_EFFICIENCY
+            soc += (added_kwh / config.BATTERY_CAPACITY_KWH) * 100
+            soc = min(soc, 100.0)
+
+        print(
+            f"║ {r['ts'].strftime('%Y-%m-%d %H:%M')}   ║"
+            f"    {A:6.0f} A    ║   {soc:6.1f} %   ║"
+        )
+
+    print("╚════════════════════╩════════════════╩══════════════╝")
+    print(f"🔋 Start SOC: {batt_soc_now}%  –  projected end SOC: {soc:.1f}%")
+
+    if soc + 0.2 < config.BATTERY_TARGET_SOC:
+        print(f"⚠️  Target SOC {config.BATTERY_TARGET_SOC}% likely not reached.")
+
     return charging_plan

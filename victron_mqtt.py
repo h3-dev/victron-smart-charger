@@ -4,17 +4,18 @@ import config
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
+
 def set_max_charge_current(current_a: int):
-    if not config.test_mode_on:
-        topic = f"W/{config.venus_device_id}/settings/0/Settings/SystemSetup/MaxChargeCurrent"
+    if not config.TEST_MODE_ON:
+        topic = f"W/{config.VENUS_DEVICE_ID}/settings/0/Settings/SystemSetup/MaxChargeCurrent"
         payload = json.dumps({"value": int(current_a)})
 
         try:
-            publish.single(topic, payload, hostname=config.venus_host)
-            print(f"✅ MaxChargeCurrent via MQTT gesetzt: {current_a}A")
+            publish.single(topic, payload, hostname=config.VENUS_HOST)
+            print(f"✅ Set DVCC MaxChargeCurrent to: {current_a}A")
             return True
         except Exception as e:
-            print(f"❌ Fehler beim Setzen von MaxChargeCurrent via MQTT: {e}")
+            print(f"❌ Error setting MaxChargeCurrent to: {e}")
             return False
     else:
         print(f"[TESTMODE] MaxChargeCurrent = {current_a}A")
@@ -22,8 +23,8 @@ def set_max_charge_current(current_a: int):
 
 
 def get_battery_soc():
-    if config.battery_soc_override is not None:
-        return int(config.battery_soc_override)
+    if config.BATTERY_SOC_OVERRIDE is not None:
+        return int(config.BATTERY_SOC_OVERRIDE)
 
     result = {"value": None}
 
@@ -31,20 +32,20 @@ def get_battery_soc():
         payload = json.loads(msg.payload.decode())
         result["value"] = payload.get("value")
 
-    topic = f"N/{config.venus_device_id}/system/0/Dc/Battery/Soc"
-    trigger_topic = f"R/{config.venus_device_id}/system/0/Serial"
+    topic = f"N/{config.VENUS_DEVICE_ID}/system/0/Dc/Battery/Soc"
+    trigger_topic = f"R/{config.VENUS_DEVICE_ID}/system/0/Serial"
 
     client = mqtt.Client()
     client.on_message = on_message
-    client.connect(config.venus_host)
+    client.connect(config.VENUS_HOST)
     client.subscribe(topic)
     client.loop_start()
 
-    # Trigger: Leere Nachricht senden, um MQTT-Server aufzuwecken
+    # Trigger: Send empty payload to wakeup MQTT Server on Venus
     try:
-        publish.single(trigger_topic, payload=None, hostname=config.venus_host)
+        publish.single(trigger_topic, payload=None, hostname=config.VENUS_HOST)
     except Exception as e:
-        print(f"⚠️ MQTT Trigger fehlgeschlagen: {e}")
+        print(f"⚠️ MQTT wakeup trigger failed: {e}")
 
     timeout = 5
     for _ in range(timeout * 10):
@@ -58,5 +59,5 @@ def get_battery_soc():
     if result["value"] is not None:
         return int(result["value"])
     else:
-        print("❌ Kein SOC-Wert über MQTT empfangen.")
+        print("❌ Couldn't fetch MQTT value for battery soc.")
         return None

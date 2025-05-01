@@ -1,25 +1,23 @@
-# utils.py
-
 from datetime import datetime
 import os
 import time as sys_time
 
-from config import now_override
+from config import TIME_OVERRIDE
 
-# Setze Zeitzone global (z. B. für Venus OS ohne zoneinfo)
+# Set global timezone to Europe/Berlin
 os.environ["TZ"] = "Europe/Berlin"
 sys_time.tzset()
 
 
-def now():
+def now() -> datetime:
     """
-    Gibt die aktuelle Zeit zurück oder einen gesetzten Override.
+    Return the current time or the override time if specified.
     """
-    return now_override or datetime.now()
+    return TIME_OVERRIDE or datetime.now()
 
 
 def get_unix_timestamp(dt: datetime) -> int:
     """
-    Wandelt ein datetime-Objekt in einen Unix-Zeitstempel (Sekunden).
+    Convert a datetime object to a Unix timestamp (seconds since epoch).
     """
     return int(dt.timestamp())

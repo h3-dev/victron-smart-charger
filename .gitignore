@@ -3,7 +3,8 @@ __pycache__/
 *$py.class
 venv/
 *.log
-config.py
-dbus_example_commands.txt
+*.config.py
 test.py
 .ruff_cache
+.env
+notes.txt
