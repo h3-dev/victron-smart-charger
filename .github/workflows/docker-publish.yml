@@ -2,8 +2,8 @@ name: Build & Publish Docker image
 
 on:
   push:
-    branches: [ "main" ]        # push to main …
-    tags:     [ "v*" ]          # tags like v1.2.3
+    branches: ["main"]      # build on main
+    tags:     ["v*"]        # and on version tags (v1.2.3)
 
 env:
   REGISTRY: ghcr.io
@@ -11,43 +11,44 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
-    permissions:                      # login to ghcr.io
-      contents: read
-      packages: write
+    permissions:
+      contents: read        # required for checkout
+      packages: write       # required to push to ghcr
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ----- Set image tags ----------------------------------------
-      - name: Extract tag / sha
+      # set up Buildx (modern Docker builder)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # generate tags and labels (latest, sha, version tag)
+      - name: Docker meta
         id: meta
-        run: |
-          if [[ $GITHUB_REF_TYPE == "tag" ]]; then
-            VERSION_TAG=${GITHUB_REF_NAME}        # v1.2.3
-          else
-            VERSION_TAG=${GITHUB_SHA::7}          # short-SHA
-          fi
-          echo "version=$VERSION_TAG"   >> $GITHUB_OUTPUT
-          echo "latest=latest"         >> $GITHUB_OUTPUT
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha
 
-      # ----- Build image -------------------------------------------
-      - name: Build image
-        run: |
-          docker build \
-            -t $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} \
-            -t $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.latest }} \
-            .
+      # log in to GitHub Container Registry
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ----- Login to GitHub Container Registry -------------------
-      - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | \
-             docker login $REGISTRY -u $GITHUB_ACTOR --password-stdin
-
-      # ----- Push image -------------------------------------------
-      - name: Push image
-        run: |
-          docker push $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          docker push $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.latest }}
+      # build and push
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
