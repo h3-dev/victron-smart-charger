@@ -1,0 +1,53 @@
+name: Build & Publish Docker image
+
+on:
+  push:
+    branches: [ "main" ]        # push to main …
+    tags:     [ "v*" ]          # tags like v1.2.3
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}   # ghcr.io/<owner>/<repo>
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-22.04
+
+    permissions:                      # login to ghcr.io
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ----- Set image tags ----------------------------------------
+      - name: Extract tag / sha
+        id: meta
+        run: |
+          if [[ $GITHUB_REF_TYPE == "tag" ]]; then
+            VERSION_TAG=${GITHUB_REF_NAME}        # v1.2.3
+          else
+            VERSION_TAG=${GITHUB_SHA::7}          # short-SHA
+          fi
+          echo "version=$VERSION_TAG"   >> $GITHUB_OUTPUT
+          echo "latest=latest"         >> $GITHUB_OUTPUT
+
+      # ----- Build image -------------------------------------------
+      - name: Build image
+        run: |
+          docker build \
+            -t $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} \
+            -t $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.latest }} \
+            .
+
+      # ----- Login to GitHub Container Registry -------------------
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | \
+             docker login $REGISTRY -u $GITHUB_ACTOR --password-stdin
+
+      # ----- Push image -------------------------------------------
+      - name: Push image
+        run: |
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          docker push $REGISTRY/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.latest }}

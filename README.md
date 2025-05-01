@@ -36,6 +36,7 @@ docker run --rm -d \
   -v "$(pwd)/.env":/home/app/.env:ro \
   victron-charger
 
+# local running without docker
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt     # only 3 runtime deps
