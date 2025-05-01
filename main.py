@@ -2,7 +2,8 @@ from utils import now
 from forecast import get_forecast
 from charging_plan import calculate_hourly_charging_plan
 from victron_mqtt import set_max_charge_current, get_battery_soc
-import app_state                                   # <-- neu import
+import app_state  # <-- neu import
+
 
 def main():
     current_time = now()
@@ -31,6 +32,7 @@ def main():
     app_state.set_forecast(valid_forecast_full)
     app_state.set_plan(charging_plan)
     app_state.set_status(status)
+
 
 if __name__ == "__main__":
     main()

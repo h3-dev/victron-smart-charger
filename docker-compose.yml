@@ -1,19 +1,11 @@
 services:
   victron-dev:
-    build:
-      context: .
-      #target: runtime
+    build: .
     container_name: victron-dev
-    command: >
-      sh -c "
-        python main_loop.py &
-        uvicorn web:app --reload --host 0.0.0.0 --port 8000
-      "
+    command: python main_loop.py       # <–– nur noch EIN Prozess
     volumes:
-      - .:/home/app:rw
-      - ~/.cache/pip:/home/app/.cache/pip
-    environment:
-      - PYTHONUNBUFFERED=1
+      - ".:/home/app:rw"
+      - "./.env:/home/app/.env:ro"
     ports:
-      - "8000:8000"
+      - "8000:8000"                    # Host:Container
     restart: unless-stopped

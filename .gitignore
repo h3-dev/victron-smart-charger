@@ -8,3 +8,4 @@ test.py
 .ruff_cache
 .env
 notes.txt
+.cache
