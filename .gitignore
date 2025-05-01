@@ -4,3 +4,6 @@ __pycache__/
 venv/
 *.log
 config.py
+dbus_example_commands.txt
+test.py
+.ruff_cache

@@ -3,7 +3,9 @@
 from utils import now
 from forecast import get_forecast
 from charging_plan import calculate_hourly_charging_plan
-from victron_interface import set_max_charge_current
+from victron_mqtt import set_max_charge_current
+
+# from victron_interface import set_max_charge_current
 
 
 def main():

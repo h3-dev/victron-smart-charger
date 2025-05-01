@@ -7,6 +7,7 @@ from utils import (  # Importiere zentrale Konfiguration
     now,
 )
 
+
 def get_forecast():
     """Holt die PV-Ertragsprognose für den aktuellen Tag – aus der VRM API oder per Override."""
 

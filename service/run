@@ -1,6 +1,0 @@
-#!/bin/sh
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-PY_SCRIPT="$(dirname "$SCRIPT_DIR")/main.py"
-
-exec 2>&1
-exec python3 -u "$PY_SCRIPT"
