@@ -67,9 +67,10 @@ OUTPUT_FORECAST: bool = _get_bool("OUTPUT_FORECAST", True)
 
 # a) optional battery-SOC override
 _batt_soc_override = os.getenv("BATTERY_SOC_OVERRIDE")
-BATTERY_SOC_OVERRIDE: int | None = (
-    int(_batt_soc_override) if _batt_soc_override is not None else None
-)
+if _batt_soc_override:
+    BATTERY_SOC_OVERRIDE = int(_batt_soc_override)
+else:
+    BATTERY_SOC_OVERRIDE = None
 
 # b) optional timestamp override (e.g. for replay tests)
 _time_override = os.getenv("TIME_OVERRIDE")
