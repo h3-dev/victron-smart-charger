@@ -1,28 +1,31 @@
-# web.py
-from fastapi import FastAPI
-import app_state
+from fastapi import FastAPI, APIRouter
 from fastapi.staticfiles import StaticFiles
+import app_state
 
-
+# ---------- FastAPI root -----------------
 app = FastAPI(
-    title="Victron Smart Charger API",
+    title="Victron Smart Charger",
     version="0.1.0",
-    docs_url="/",  # Swagger UI
+    docs_url="/api/docs",          # Swagger → /api/docs
+    openapi_url="/api/openapi.json"
 )
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# ---------- API Router -------------------
+api = APIRouter(prefix="/api")
 
-@app.get("/forecast")
-def read_forecast():
+@api.get("/forecast")
+def get_forecast():
     return app_state.latest_forecast
 
-
-@app.get("/charging-plan")
-def read_plan():
-    # Dict with ISO-Timestamp-Strings → Ampere
+@api.get("/charging-plan")
+def get_plan():
     return app_state.latest_plan
 
-
-@app.get("/status")
-def read_status():
+@api.get("/status")
+def get_status():
     return app_state.latest_status
+
+app.include_router(api)
+
+# ---------- Static UI --------------------
+app.mount("/", StaticFiles(directory="static", html=True), name="ui")

@@ -4,7 +4,8 @@ services:
     container_name: victron-dev
     command: python main_loop.py       # <–– nur noch EIN Prozess
     volumes:
-      - ".:/home/app:rw"
+      #- ".:/home/app:rw"
+      #- "./charger-ui/dist:/home/app/static:ro"
       - "./.env:/home/app/.env:ro"
     ports:
       - "8000:8000"                    # Host:Container
