@@ -1,6 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { BatteryMedium, PlugZap, Zap } from 'lucide-vue-next'
+// SVG Icon component and MDI paths
+import SvgIcon from '@jamescoyle/vue-icon'
+import {
+  mdiBatteryHigh,
+  mdiFlagCheckered,
+  mdiCurrentAc,
+  mdiArrowUpDropCircleOutline,
+  mdiArrowUpDropCircle,
+  mdiArrowDownDropCircleOutline,
+  mdiArrowDownDropCircle,
+  mdiLightningBolt
+} from '@mdi/js'
 
 const status = ref({})
 const forecast = ref([])
@@ -10,6 +21,17 @@ async function load() {
   status.value = await fetch('/api/status').then(r => r.json())
   forecast.value = await fetch('/api/forecast').then(r => r.json())
   plan.value = await fetch('/api/charging-plan').then(r => r.json())
+}
+
+async function changeTarget(delta) {
+  const current = status.value.target_soc ?? 0
+  const newTarget = Math.max(0, Math.min(100, current + delta))
+  await fetch('/api/target-soc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_soc: newTarget })
+  })
+  await load()
 }
 
 onMounted(() => {
@@ -25,15 +47,34 @@ onMounted(() => {
 
       <!-- Live Status Card -->
       <div class="mb-6 rounded-2xl bg-white shadow p-6">
-        <h2 class="text-2xl font-semibold text-center mb-4">Live Status</h2>
-        <div class="flex justify-center space-x-4">
+        <div class="flex justify-center space-x-16">
+          <!-- Current SOC -->
           <div class="flex flex-col items-center">
-            <BatteryMedium class="w-6 h-6 text-gray-500 mb-1" />
-            <p class="text-lg font-normal text-center">{{ status.current_soc ?? '–' }} %</p>
+            <SvgIcon type="mdi" :path="mdiBatteryHigh" class="w-6 h-6 text-black-500" />
+            <span class="text-lg font-normal mt-1">{{ status.current_soc ?? '–' }} %</span>
+            <span class="text-xs text-gray-500 mt-1">current soc</span>
           </div>
+          <!-- Target SOC with stepper -->
           <div class="flex flex-col items-center">
-            <PlugZap class="w-6 h-6 text-gray-500 mb-1" />
-            <p class="text-lg font-normal text-center">{{ status.current_a ?? '–' }} A</p>
+            <SvgIcon type="mdi" :path="mdiFlagCheckered" class="w-6 h-6 text-black-500" />
+            <div class="flex items-center space-x-2 mt-1">
+              <button @click="changeTarget(-1)" class="p-1 rounded group hover:bg-gray-200">
+                <SvgIcon type="mdi" :path="mdiArrowDownDropCircleOutline" class="w-5 h-5 text-gray-700 group-hover:hidden" />
+                <SvgIcon type="mdi" :path="mdiArrowDownDropCircle" class="w-5 h-5 text-gray-700 hidden group-hover:block" />
+              </button>
+              <span class="text-lg font-normal">{{ status.target_soc ?? '–' }} %</span>
+              <button @click="changeTarget(1)" class="p-1 rounded group hover:bg-gray-200">
+                <SvgIcon type="mdi" :path="mdiArrowUpDropCircleOutline" class="w-5 h-5 text-gray-700 group-hover:hidden" />
+                <SvgIcon type="mdi" :path="mdiArrowUpDropCircle" class="w-5 h-5 text-gray-700 hidden group-hover:block" />
+              </button>
+            </div>
+            <span class="text-xs text-gray-500 mt-1">target soc</span>
+          </div>
+          <!-- Current Charge -->
+          <div class="flex flex-col items-center">
+            <SvgIcon type="mdi" :path="mdiCurrentAc" class="w-6 h-6 text-black-500" />
+            <span class="text-lg font-normal mt-1">{{ status.current_a ?? '–' }} A</span>
+            <span class="text-xs text-gray-500 mt-1">charge limit</span>
           </div>
         </div>
       </div>
@@ -60,21 +101,21 @@ onMounted(() => {
               :class="{ 'font-semibold': new Date(ts).getHours() === new Date().getHours() }"
               class="odd:bg-white even:bg-gray-50 hover:bg-gray-100"
             >
-              <!-- Time cell with centered arrow -->
-              <td class="relative px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                <Zap
+              <!-- Time cell with lightning icon -->
+              <td class="relative px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
+                <SvgIcon
                   v-if="new Date(ts).getHours() === new Date().getHours()"
-                  class="absolute left-2 top-1/2 transform -translate-y-1/2 w-5 h-5 text-yellow-500"
+                  type="mdi"
+                  :path="mdiLightningBolt"
+                  class="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-500"
                 />
-                <div class="text-center">
-                  {{ new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
-                </div>
+                <div>{{ new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</div>
               </td>
-              <!-- Forecast value center-aligned -->
+              <!-- Forecast -->
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
                 {{ (Math.ceil((wh/1000)*10)/10).toFixed(1) }}
               </td>
-              <!-- Charge current center-aligned -->
+              <!-- Charge -->
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 text-center">
                 {{ plan[ts] ?? 0 }}
               </td>
