@@ -1,6 +1,7 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.staticfiles import StaticFiles
 import app_state
+import config
 
 # ---------- FastAPI root -----------------
 app = FastAPI(
@@ -23,7 +24,22 @@ def get_plan():
 
 @api.get("/status")
 def get_status():
-    return app_state.latest_status
+    status = app_state.latest_status.copy()
+    status["target_soc"] = app_state.latest_target_soc
+    return status
+
+@api.post("/target-soc")
+def post_target_soc(payload: dict):
+    val = payload.get("target_soc")
+    try:
+        soc = int(val)
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Invalid target_soc, must be an integer")
+    if not 0 <= soc <= 100:
+        raise HTTPException(400, "target_soc must be between 0 and 100")
+
+    app_state.set_target_soc(soc)
+    return {"target_soc": app_state.latest_target_soc}
 
 app.include_router(api)
 

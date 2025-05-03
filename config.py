@@ -40,7 +40,7 @@ APP_REFRESH_INTERVAL_SEC: int = int(os.getenv("APP_REFRESH_INTERVAL_SEC", 900))
 # ------------------------------------------------------------------
 # 3)  Battery parameters
 # ------------------------------------------------------------------
-BATTERY_TARGET_SOC: int = int(os.getenv("BATTERY_TARGET_SOC", 95))
+BATTERY_TARGET_SOC = 100
 BATTERY_CAPACITY_KWH: float = float(os.getenv("BATTERY_CAPACITY_KWH", 16))
 BATTERY_VOLTAGE: int = int(os.getenv("BATTERY_VOLTAGE", 52))
 BATTERY_CHARGING_EFFICIENCY: float = float(

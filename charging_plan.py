@@ -1,7 +1,7 @@
 import config
 from victron_mqtt import get_battery_soc
 from math import floor
-
+from app_state import latest_target_soc
 
 def calculate_hourly_charging_plan(valid_forecast_future):
     """Return an hourly charging plan (integer amps, max deviation < 1 A·V)."""
@@ -16,7 +16,7 @@ def calculate_hourly_charging_plan(valid_forecast_future):
     # 1. Required DC energy (Wh) to reach target SOC
     # -------------------------------------------------------------
     need_kwh = (
-        config.BATTERY_CAPACITY_KWH * (config.BATTERY_TARGET_SOC - batt_soc_now) / 100
+        config.BATTERY_CAPACITY_KWH * (latest_target_soc - batt_soc_now) / 100
     )
     if need_kwh <= 0:
         print("🔋 Battery already sufficiently charged.")
@@ -92,29 +92,7 @@ def calculate_hourly_charging_plan(valid_forecast_future):
     charging_plan = {}
     soc = batt_soc_now
 
-    print("\n📅 Charging plan:")
-    print("╔════════════════════╦════════════════╦══════════════╗")
-    print("║ Timestamp          ║ Current [A]    ║ SOC [%]      ║")
-    print("╠════════════════════╬════════════════╬══════════════╣")
-
-    for r in rows:
-        A = r["floor"]
-        charging_plan[r["ts"]] = A
-
-        if A > 0 and soc < 100:
-            added_kwh = (A * V / 1000) * config.BATTERY_CHARGING_EFFICIENCY
-            soc += (added_kwh / config.BATTERY_CAPACITY_KWH) * 100
-            soc = min(soc, 100.0)
-
-        print(
-            f"║ {r['ts'].strftime('%Y-%m-%d %H:%M')}   ║"
-            f"    {A:6.0f} A    ║   {soc:6.1f} %   ║"
-        )
-
-    print("╚════════════════════╩════════════════╩══════════════╝")
-    print(f"🔋 Start SOC: {batt_soc_now}%  –  projected end SOC: {soc:.1f}%")
-
-    if soc + 0.2 < config.BATTERY_TARGET_SOC:
-        print(f"⚠️  Target SOC {config.BATTERY_TARGET_SOC}% likely not reached.")
+    if soc + 0.2 < latest_target_soc:
+        print(f"⚠️  Target SOC {latest_target_soc}% likely not reached.")
 
     return charging_plan

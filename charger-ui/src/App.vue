@@ -29,7 +29,7 @@ onMounted(() => {
         <div class="flex justify-center space-x-4">
           <div class="flex flex-col items-center">
             <BatteryMedium class="w-6 h-6 text-gray-500 mb-1" />
-            <p class="text-lg font-normal text-center">{{ status.soc ?? '–' }} %</p>
+            <p class="text-lg font-normal text-center">{{ status.current_soc ?? '–' }} %</p>
           </div>
           <div class="flex flex-col items-center">
             <PlugZap class="w-6 h-6 text-gray-500 mb-1" />

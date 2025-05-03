@@ -2,8 +2,10 @@ from utils import now
 from forecast import get_forecast
 from charging_plan import calculate_hourly_charging_plan
 from victron_mqtt import set_max_charge_current, get_battery_soc
-import app_state  # <-- neu import
+import app_state
+import config
 
+TARGET_SOC = config.BATTERY_TARGET_SOC
 
 def main():
     current_time = now()
@@ -15,20 +17,17 @@ def main():
         print("❌ No valid forecast available.")
         return
 
-    # 2) Ladeplan berechnen
     charging_plan = calculate_hourly_charging_plan(valid_forecast_future)
 
-    # 3) Aktuellen Strom setzen
     charging_current_now = charging_plan.get(now_hour, 0)
     set_max_charge_current(charging_current_now)
 
-    # 4) Status sammeln
     status = {
-        "soc": get_battery_soc(),
+        "current_soc": get_battery_soc(),
         "current_a": charging_current_now,
+        "target_soc": config.BATTERY_TARGET_SOC,
     }
 
-    # 5) Ergebnisse in app_state speichern
     app_state.set_forecast(valid_forecast_full)
     app_state.set_plan(charging_plan)
     app_state.set_status(status)
