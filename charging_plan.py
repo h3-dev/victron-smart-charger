@@ -19,7 +19,7 @@ def calculate_hourly_charging_plan(valid_forecast_future):
         config.BATTERY_CAPACITY_KWH * (latest_target_soc - batt_soc_now) / 100
     )
     if need_kwh <= 0:
-        print("🔋 Battery already sufficiently charged.")
+        print("🔋 Battery already sufficiently charged or at target SOC.")
         return {}
 
     need_wh_dc = need_kwh * 1000 / config.BATTERY_CHARGING_EFFICIENCY
@@ -53,13 +53,11 @@ def calculate_hourly_charging_plan(valid_forecast_future):
 
         floor_a = int(floor(raw_a))
         fraction = raw_a - floor_a
-        rows.append(
-            {
-                "ts": ts.replace(minute=0, second=0, microsecond=0),
-                "floor": floor_a,
-                "frac": fraction,
-            }
-        )
+        rows.append({
+            "ts": ts.replace(minute=0, second=0, microsecond=0),
+            "floor": floor_a,
+            "frac": fraction,
+        })
 
     # -------------------------------------------------------------
     # 4. Energy balance after flooring
@@ -72,15 +70,12 @@ def calculate_hourly_charging_plan(valid_forecast_future):
     # -------------------------------------------------------------
     if abs(delta_wh) >= V:  # at least 1 A deviation
         rows_sorted = sorted(rows, key=lambda r: r["frac"], reverse=(delta_wh > 0))
-
         step = V if delta_wh > 0 else -V
         idx = 0
         while abs(delta_wh) >= V and idx < len(rows_sorted):
             r = rows_sorted[idx]
-            within_limits = (
-                delta_wh > 0 and r["floor"] < config.BATTERY_MAX_CHARGE_CURRENT
-            ) or (delta_wh < 0 and r["floor"] > config.BATTERY_MIN_CHARGE_CURRENT)
-            if within_limits and r["floor"] > 0:
+            if (delta_wh > 0 and r["floor"] < config.BATTERY_MAX_CHARGE_CURRENT) or \
+               (delta_wh < 0 and r["floor"] > config.BATTERY_MIN_CHARGE_CURRENT):
                 r["floor"] += 1 if delta_wh > 0 else -1
                 delta_wh -= step
             idx += 1
@@ -91,6 +86,22 @@ def calculate_hourly_charging_plan(valid_forecast_future):
     rows.sort(key=lambda r: r["ts"])  # chronological order
     charging_plan = {}
     soc = batt_soc_now
+
+    print("\n📅 Charging plan:")
+    for r in rows:
+        ts = r["ts"]
+        a = r["floor"]
+        charging_plan[ts] = a
+
+        if a > 0 and soc < 100:
+            added_kwh = (a * V / 1000) * config.BATTERY_CHARGING_EFFICIENCY
+            soc += (added_kwh / config.BATTERY_CAPACITY_KWH) * 100
+            soc = min(soc, 100.0)
+
+        print(f"║ {ts.strftime('%Y-%m-%d %H:%M')}   ║    {a:6.0f} A    ║   {soc:6.1f} %   ║")
+
+    print("╚════════════════════╩════════════════╩══════════════╝")
+    print(f"🔋 Start SOC: {batt_soc_now}%  –  Target SOC: {latest_target_soc}%")
 
     if soc + 0.2 < latest_target_soc:
         print(f"⚠️  Target SOC {latest_target_soc}% likely not reached.")
