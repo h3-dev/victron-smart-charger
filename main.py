@@ -7,6 +7,7 @@ import config
 
 TARGET_SOC = config.BATTERY_TARGET_SOC
 
+
 def main():
     current_time = now()
     now_hour = current_time.replace(minute=0, second=0, microsecond=0)

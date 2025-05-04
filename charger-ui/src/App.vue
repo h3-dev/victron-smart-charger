@@ -47,32 +47,49 @@ onMounted(() => {
 
       <!-- Live Status Card -->
       <div class="mb-6 rounded-2xl bg-white shadow p-6">
-        <div class="flex justify-center space-x-16">
+        <!-- Responsive layout: column on mobile, row on md+ -->
+        <div class="flex flex-col space-y-6 md:flex-row md:space-y-0 md:space-x-16 justify-center">
           <!-- Current SOC -->
           <div class="flex flex-col items-center">
-            <SvgIcon type="mdi" :path="mdiBatteryHigh" class="w-6 h-6 text-black-500" />
+            <SvgIcon type="mdi" :path="mdiBatteryHigh" class="w-6 h-6 text-gray-500" />
             <span class="text-lg font-normal mt-1">{{ status.current_soc ?? '–' }} %</span>
             <span class="text-xs text-gray-500 mt-1">current soc</span>
           </div>
           <!-- Target SOC with stepper -->
           <div class="flex flex-col items-center">
-            <SvgIcon type="mdi" :path="mdiFlagCheckered" class="w-6 h-6 text-black-500" />
+            <SvgIcon type="mdi" :path="mdiFlagCheckered" class="w-6 h-6 text-gray-500" />
             <div class="flex items-center space-x-2 mt-1">
               <button @click="changeTarget(-1)" class="p-1 rounded group hover:bg-gray-200">
-                <SvgIcon type="mdi" :path="mdiArrowDownDropCircleOutline" class="w-5 h-5 text-gray-700 group-hover:hidden" />
-                <SvgIcon type="mdi" :path="mdiArrowDownDropCircle" class="w-5 h-5 text-gray-700 hidden group-hover:block" />
+                <SvgIcon
+                  type="mdi"
+                  :path="mdiArrowDownDropCircleOutline"
+                  class="w-5 h-5 text-gray-700 group-hover:hidden"
+                />
+                <SvgIcon
+                  type="mdi"
+                  :path="mdiArrowDownDropCircle"
+                  class="w-5 h-5 text-gray-700 hidden group-hover:block"
+                />
               </button>
               <span class="text-lg font-normal">{{ status.target_soc ?? '–' }} %</span>
               <button @click="changeTarget(1)" class="p-1 rounded group hover:bg-gray-200">
-                <SvgIcon type="mdi" :path="mdiArrowUpDropCircleOutline" class="w-5 h-5 text-gray-700 group-hover:hidden" />
-                <SvgIcon type="mdi" :path="mdiArrowUpDropCircle" class="w-5 h-5 text-gray-700 hidden group-hover:block" />
+                <SvgIcon
+                  type="mdi"
+                  :path="mdiArrowUpDropCircleOutline"
+                  class="w-5 h-5 text-gray-700 group-hover:hidden"
+                />
+                <SvgIcon
+                  type="mdi"
+                  :path="mdiArrowUpDropCircle"
+                  class="w-5 h-5 text-gray-700 hidden group-hover:block"
+                />
               </button>
             </div>
             <span class="text-xs text-gray-500 mt-1">target soc</span>
           </div>
           <!-- Current Charge -->
           <div class="flex flex-col items-center">
-            <SvgIcon type="mdi" :path="mdiCurrentAc" class="w-6 h-6 text-black-500" />
+            <SvgIcon type="mdi" :path="mdiCurrentAc" class="w-6 h-6 text-gray-500" />
             <span class="text-lg font-normal mt-1">{{ status.current_a ?? '–' }} A</span>
             <span class="text-xs text-gray-500 mt-1">charge limit</span>
           </div>

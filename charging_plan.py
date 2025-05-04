@@ -3,6 +3,7 @@ from victron_mqtt import get_battery_soc
 from math import floor
 from app_state import latest_target_soc
 
+
 def calculate_hourly_charging_plan(valid_forecast_future):
     """Return an hourly charging plan (integer amps, max deviation < 1 A·V)."""
 
@@ -15,9 +16,7 @@ def calculate_hourly_charging_plan(valid_forecast_future):
     # -------------------------------------------------------------
     # 1. Required DC energy (Wh) to reach target SOC
     # -------------------------------------------------------------
-    need_kwh = (
-        config.BATTERY_CAPACITY_KWH * (latest_target_soc - batt_soc_now) / 100
-    )
+    need_kwh = config.BATTERY_CAPACITY_KWH * (latest_target_soc - batt_soc_now) / 100
     if need_kwh <= 0:
         print("🔋 Battery already sufficiently charged or at target SOC.")
         return {}
@@ -53,11 +52,13 @@ def calculate_hourly_charging_plan(valid_forecast_future):
 
         floor_a = int(floor(raw_a))
         fraction = raw_a - floor_a
-        rows.append({
-            "ts": ts.replace(minute=0, second=0, microsecond=0),
-            "floor": floor_a,
-            "frac": fraction,
-        })
+        rows.append(
+            {
+                "ts": ts.replace(minute=0, second=0, microsecond=0),
+                "floor": floor_a,
+                "frac": fraction,
+            }
+        )
 
     # -------------------------------------------------------------
     # 4. Energy balance after flooring
@@ -74,8 +75,9 @@ def calculate_hourly_charging_plan(valid_forecast_future):
         idx = 0
         while abs(delta_wh) >= V and idx < len(rows_sorted):
             r = rows_sorted[idx]
-            if (delta_wh > 0 and r["floor"] < config.BATTERY_MAX_CHARGE_CURRENT) or \
-               (delta_wh < 0 and r["floor"] > config.BATTERY_MIN_CHARGE_CURRENT):
+            if (delta_wh > 0 and r["floor"] < config.BATTERY_MAX_CHARGE_CURRENT) or (
+                delta_wh < 0 and r["floor"] > config.BATTERY_MIN_CHARGE_CURRENT
+            ):
                 r["floor"] += 1 if delta_wh > 0 else -1
                 delta_wh -= step
             idx += 1
@@ -98,7 +100,9 @@ def calculate_hourly_charging_plan(valid_forecast_future):
             soc += (added_kwh / config.BATTERY_CAPACITY_KWH) * 100
             soc = min(soc, 100.0)
 
-        print(f"║ {ts.strftime('%Y-%m-%d %H:%M')}   ║    {a:6.0f} A    ║   {soc:6.1f} %   ║")
+        print(
+            f"║ {ts.strftime('%Y-%m-%d %H:%M')}   ║    {a:6.0f} A    ║   {soc:6.1f} %   ║"
+        )
 
     print("╚════════════════════╩════════════════╩══════════════╝")
     print(f"🔋 Start SOC: {batt_soc_now}%  –  Target SOC: {latest_target_soc}%")

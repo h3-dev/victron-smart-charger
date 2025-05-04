@@ -1,32 +1,35 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.staticfiles import StaticFiles
 import app_state
-import config
 
 # ---------- FastAPI root -----------------
 app = FastAPI(
     title="Victron Smart Charger",
     version="0.1.0",
-    docs_url="/api/docs",          # Swagger → /api/docs
-    openapi_url="/api/openapi.json"
+    docs_url="/api/docs",  # Swagger → /api/docs
+    openapi_url="/api/openapi.json",
 )
 
 # ---------- API Router -------------------
 api = APIRouter(prefix="/api")
 
+
 @api.get("/forecast")
 def get_forecast():
     return app_state.latest_forecast
 
+
 @api.get("/charging-plan")
 def get_plan():
     return app_state.latest_plan
+
 
 @api.get("/status")
 def get_status():
     status = app_state.latest_status.copy()
     status["target_soc"] = app_state.latest_target_soc
     return status
+
 
 @api.post("/target-soc")
 def post_target_soc(payload: dict):
@@ -40,6 +43,7 @@ def post_target_soc(payload: dict):
 
     app_state.set_target_soc(soc)
     return {"target_soc": app_state.latest_target_soc}
+
 
 app.include_router(api)
 
