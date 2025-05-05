@@ -19,7 +19,7 @@ const plan = ref({})
 
 async function load() {
   status.value = await fetch('/api/status').then(r => r.json())
-  forecast.value = await fetch('/api/forecast').then(r => r.json())
+  forecast.value = await fetch('/api/solar_forecast').then(r => r.json())
   plan.value = await fetch('/api/charging-plan').then(r => r.json())
 }
 
