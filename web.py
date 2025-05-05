@@ -14,10 +14,13 @@ app = FastAPI(
 api = APIRouter(prefix="/api")
 
 
-@api.get("/forecast")
-def get_forecast():
-    return app_state.latest_forecast
+@api.get("/solar_forecast")
+def get_solar_forecast():
+    return app_state.latest_solar_forecast
 
+@api.get("/consumption_forecast")
+def get_consumption_forecast():
+    return app_state.latest_consumption_forecast
 
 @api.get("/charging-plan")
 def get_plan():
